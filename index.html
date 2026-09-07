@@ -95,12 +95,12 @@
       smoothThreshold="5"
     >
 
-      <!-- Texto encima del modelo (mas arriba en el eje Y para que la
+      <!-- Texto encima del modelo (bien arriba en el eje Y para que la
            moneda, al girar en Z, nunca lo tape), dibujado en un canvas
            con la fuente Montserrat real y usado como textura. -->
       <a-plane
         id="textPlane"
-        position="0 1.6 0"
+        position="0 2.3 0"
         rotation="-90 0 0"
         width="2.6"
         height="0.65"
@@ -160,25 +160,36 @@
 
     // Dibuja el texto "Mi perfil INNFOCUS es" en Montserrat sobre un canvas
     // y lo usa como textura del a-plane, para asegurar que se vea con la
-    // tipografia correcta (el componente text por defecto de A-Frame no
-    // incluye Montserrat).
+    // tipografia correcta Y COMPLETO (calcula el tamano de letra que si
+    // cabe en el ancho del canvas, en vez de usar un tamano fijo).
     function pintarTextoMontserrat() {
       const canvas = document.createElement('canvas');
-      canvas.width = 1024;
-      canvas.height = 256;
+      canvas.width = 1600;
+      canvas.height = 400;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Fondo semitransparente para que el texto se lea sobre cualquier fondo
-      ctx.fillStyle = 'rgba(20, 10, 45, 0.55)';
-      roundRect(ctx, 10, 40, canvas.width - 20, canvas.height - 80, 40);
+      ctx.fillStyle = 'rgba(20, 10, 45, 0.6)';
+      roundRect(ctx, 10, 60, canvas.width - 20, canvas.height - 120, 60);
       ctx.fill();
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = "700 96px 'Montserrat'";
+      const texto = 'Mi perfil INNFOCUS es';
+      const maxAncho = canvas.width - 120; // margen para que no toque los bordes
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Mi perfil INNFOCUS es', canvas.width / 2, canvas.height / 2 + 4);
+      ctx.fillStyle = '#FFFFFF';
+
+      // Reduce el tamano de letra hasta que el texto entre completo
+      let fontSize = 150;
+      let anchoTexto;
+      do {
+        ctx.font = "700 " + fontSize + "px 'Montserrat'";
+        anchoTexto = ctx.measureText(texto).width;
+        if (anchoTexto > maxAncho) fontSize -= 4;
+      } while (anchoTexto > maxAncho && fontSize > 20);
+
+      ctx.fillText(texto, canvas.width / 2, canvas.height / 2 + 6);
 
       const textPlane = document.querySelector('#textPlane');
       textPlane.setAttribute('material', {
@@ -224,14 +235,18 @@
       const video = obtenerVideoAR();
       if (!video) return;
 
+      // Muy importante: soltar la camara que este activa ANTES de pedir
+      // la nueva. La mayoria de celulares no permiten tener 2 camaras
+      // abiertas al mismo tiempo (por eso antes daba "no se pudo acceder").
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(function (t) { t.stop(); });
+        video.srcObject = null;
+      }
+
       navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: facingMode } },
         audio: false
       }).then(function (stream) {
-        // apaga la camara anterior para no dejarla encendida de fondo
-        if (video.srcObject) {
-          video.srcObject.getTracks().forEach(function (t) { t.stop(); });
-        }
         video.srcObject = stream;
         video.play().catch(function () {});
         facingModeActual = facingMode;
@@ -246,14 +261,16 @@
       });
     }
 
-    // Espera a que AR.js cree el elemento <video> y entonces
-    // fuerza la camara delantera como camara inicial.
+    // Espera a que AR.js tenga la camara REALMENTE encendida y dando
+    // imagen (no solo el <video> creado) antes de tocar nada, para no
+    // pelear por el dispositivo con la propia inicializacion de AR.js.
+    // Recien ahi la cambiamos a la delantera.
     function iniciarConCamaraDelantera() {
       const video = obtenerVideoAR();
-      if (video) {
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
         pedirCamara('user');
       } else {
-        setTimeout(iniciarConCamaraDelantera, 200);
+        setTimeout(iniciarConCamaraDelantera, 250);
       }
     }
     iniciarConCamaraDelantera();

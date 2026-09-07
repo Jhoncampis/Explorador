@@ -52,7 +52,7 @@
 </head>
 <body>
 
-  <div id="overlay">Apunta la camara al marcador de INNFOCUS</div>
+  <div id="overlay">Apunta la camara al marcador HIRO</div>
   <div id="hint">Buscando marcador...</div>
 
   <a-scene
@@ -66,10 +66,9 @@
       <img id="badgeTex" src="assets/badge-medal.png" crossorigin="anonymous">
     </a-assets>
 
-    <!-- Marcador personalizado generado a partir de la imagen INNFOCUS -->
+    <!-- Marcador estandar HIRO (viene incluido en AR.js, no requiere .patt propio) -->
     <a-marker
-      type="pattern"
-      url="assets/innfocus.patt"
+      preset="hiro"
       id="innfocusMarker"
       smooth="true"
       smoothCount="10"

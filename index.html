@@ -48,12 +48,31 @@
       text-shadow: 0 0 6px rgba(0,0,0,0.8);
       pointer-events: none;
     }
+    /* Boton para cambiar de camara (frontal / trasera) */
+    #switchCameraBtn {
+      position: fixed;
+      z-index: 999;
+      bottom: 18px;
+      right: 18px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 24px;
+      background: rgba(20, 20, 30, 0.75);
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
 
   <div id="overlay">Apunta la camara al marcador HIRO</div>
   <div id="hint">Buscando marcador...</div>
+  <button id="switchCameraBtn">🔄 Cambiar camara</button>
 
   <a-scene
     vr-mode-ui="enabled: false"
@@ -76,51 +95,50 @@
       smoothThreshold="5"
     >
 
-      <!-- Texto encima del modelo, dibujado en un canvas con la fuente
-           Montserrat real y usado como textura (mas fiable que el
-           componente "text" de A-Frame, que no trae Montserrat integrada) -->
+      <!-- Texto encima del modelo (mas arriba en el eje Y para que la
+           moneda, al girar en Z, nunca lo tape), dibujado en un canvas
+           con la fuente Montserrat real y usado como textura. -->
       <a-plane
         id="textPlane"
-        position="0 1.15 0"
+        position="0 1.6 0"
         rotation="-90 0 0"
         width="2.6"
         height="0.65"
         material="transparent: true; opacity: 0; shader: flat"
       ></a-plane>
 
-      <!-- "Modelo 3D": una moneda/medalla que gira sobre su propio eje
-           vertical, mostrando primero una cara, luego el canto (de lado),
-           luego la otra cara -- como una moneda real girando.
-           Se arma con 2 caras circulares (la imagen de la insignia) +
-           un canto cilindrico solido para dar grosor. -->
+      <!-- "Modelo 3D": una moneda que queda acostada en el MISMO PLANO
+           que el marcador (caras mirando hacia arriba/abajo, igual que
+           el marcador esta acostado en la mesa) y gira sobre el eje Z,
+           como una moneda de verdad dando vueltas: cara -> canto -> cara. -->
       <a-entity
         id="badge3d"
-        position="0 0.75 0"
+        position="0 0.7 0"
         scale="0.55 0.55 0.55"
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear"
+        animation="property: rotation; to: 0 0 360; loop: true; dur: 6000; easing: linear"
       >
-        <!-- Cara frontal -->
+        <!-- Cara de arriba -->
         <a-circle
           radius="1"
           segments="64"
-          position="0 0 0.061"
+          position="0 0.061 0"
+          rotation="-90 0 0"
           material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
         ></a-circle>
 
-        <!-- Cara trasera (misma imagen, volteada hacia el otro lado) -->
+        <!-- Cara de abajo (misma imagen, mirando hacia el otro lado) -->
         <a-circle
           radius="1"
           segments="64"
-          position="0 0 -0.061"
-          rotation="0 180 0"
+          position="0 -0.061 0"
+          rotation="90 0 0"
           material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
         ></a-circle>
 
-        <!-- Canto de la moneda (grosor) -->
+        <!-- Canto de la moneda (grosor); eje Y por defecto, igual que las caras -->
         <a-cylinder
           radius="0.995"
           height="0.12"
-          rotation="90 0 0"
           material="color: #C9A227; metalness: 0.6; roughness: 0.35; shader: standard"
         ></a-cylinder>
       </a-entity>
@@ -188,6 +206,62 @@
     } else {
       window.addEventListener('load', pintarTextoMontserrat);
     }
+
+    // ---------------------------------------------------------------
+    // Cambio de camara (frontal / trasera)
+    // ---------------------------------------------------------------
+    // AR.js pide la camara automaticamente al iniciar (por eso el navegador
+    // pide permiso), pero por defecto suele abrir la trasera. Aqui tomamos
+    // control del <video> que crea AR.js y le forzamos la camara delantera
+    // apenas esta disponible, y dejamos un boton para alternar despues.
+    let facingModeActual = 'user'; // 'user' = delantera, 'environment' = trasera
+
+    function obtenerVideoAR() {
+      return document.querySelector('#arjs-video') || document.querySelector('video');
+    }
+
+    function pedirCamara(facingMode) {
+      const video = obtenerVideoAR();
+      if (!video) return;
+
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode } },
+        audio: false
+      }).then(function (stream) {
+        // apaga la camara anterior para no dejarla encendida de fondo
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(function (t) { t.stop(); });
+        }
+        video.srcObject = stream;
+        video.play().catch(function () {});
+        facingModeActual = facingMode;
+
+        // avisa a AR.js que revise el tamano de la fuente de video
+        setTimeout(function () {
+          window.dispatchEvent(new Event('resize'));
+        }, 300);
+      }).catch(function (err) {
+        console.warn('No se pudo cambiar de camara:', err);
+        alert('No se pudo acceder a esa camara en este dispositivo o navegador.');
+      });
+    }
+
+    // Espera a que AR.js cree el elemento <video> y entonces
+    // fuerza la camara delantera como camara inicial.
+    function iniciarConCamaraDelantera() {
+      const video = obtenerVideoAR();
+      if (video) {
+        pedirCamara('user');
+      } else {
+        setTimeout(iniciarConCamaraDelantera, 200);
+      }
+    }
+    iniciarConCamaraDelantera();
+
+    document.getElementById('switchCameraBtn').addEventListener('click', function () {
+      const nuevaCamara = facingModeActual === 'user' ? 'environment' : 'user';
+      pedirCamara(nuevaCamara);
+    });
   </script>
 
 </body>

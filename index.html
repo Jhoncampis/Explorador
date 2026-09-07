@@ -1,66 +1,177 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Realidad Aumentada - Hiro</title>
-  
-  <!-- Carga de A-Frame para el motor 3D -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <!-- Carga de AR.js para detectar el marcador con la cámara -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>INNFOCUS - Realidad Aumentada</title>
+
+  <!-- Fuente Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- AR.js para A-Frame (version marcador/pattern) -->
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-<link type="text/css" rel="stylesheet" href="css/style.css"/>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    /* Aviso mientras carga / pide permisos de camara */
+    #overlay {
+      position: fixed;
+      z-index: 999;
+      top: 0; left: 0; right: 0;
+      padding: 14px 18px;
+      background: rgba(20, 20, 30, 0.75);
+      color: #fff;
+      font-size: 14px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* Texto flotante en HTML que sigue mostrandose sobre el video mientras
+       no hay marcador (informativo, no forma parte de la escena AR) */
+    #hint {
+      position: fixed;
+      z-index: 998;
+      bottom: 18px;
+      left: 0; right: 0;
+      text-align: center;
+      color: #fff;
+      font-size: 13px;
+      text-shadow: 0 0 6px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+  </style>
 </head>
+<body>
 
-<body style="margin: 0; overflow: hidden;">
+  <div id="overlay">Apunta la camara al marcador de INNFOCUS</div>
+  <div id="hint">Buscando marcador...</div>
 
-  <!-- Escena principal de Realidad Aumentada -->
-  <a-scene 
-    embedded 
-    arjs="sourceType: webcam; debugUIEnabled: false;"
-    vr-mode-ui="enabled: false">
-    
-    <!-- Recurso: Imagen de la insignia de Explorador -->
+  <a-scene
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;"
+  >
+
     <a-assets>
-      <img id="insignia-explorador" src="1788747483790.jpg">
+      <img id="badgeTex" src="assets/badge-medal.png" crossorigin="anonymous">
     </a-assets>
 
-    <!-- Marcador estándar Hiro -->
-    <a-marker preset="hiro">
-      
-      <!-- Contenedor con animación de giro lento (360 grados en 10 segundos) -->
-      <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
-        
-        <!-- Texto superior en fuente Montserrat -->
-        <a-text 
-          value="Mi perfil INNFOCUS es" 
-          font="https://raw.githubusercontent.com/etiennepinchon/aframe-fonts/master/fonts/montserrat/Montserrat-Bold.json"
-          shader="msdf"
-          align="center" 
-          position="0 1.5 0" 
-          scale="1.2 1.2 1.2" 
-          color="#FFFFFF">
-        </a-text>
+    <!-- Marcador personalizado generado a partir de la imagen INNFOCUS -->
+    <a-marker
+      type="pattern"
+      url="assets/innfocus.patt"
+      id="innfocusMarker"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+    >
 
-        <!-- Modelo 2D/3D (Insignia de Explorador) sobre el marcador -->
-        <a-plane 
-          src="#insignia-explorador" 
-          position="0 0.4 0" 
-          rotation="-20 0 0" 
-          width="1.6" 
-          height="1.6" 
-          material="transparent: true; alphaTest: 0.5">
-        </a-plane>
+      <!-- Texto encima del modelo, dibujado en un canvas con la fuente
+           Montserrat real y usado como textura (mas fiable que el
+           componente "text" de A-Frame, que no trae Montserrat integrada) -->
+      <a-plane
+        id="textPlane"
+        position="0 1.15 0"
+        rotation="-90 0 0"
+        width="2.6"
+        height="0.65"
+        material="transparent: true; opacity: 0; shader: flat"
+      ></a-plane>
 
+      <!-- "Modelo 3D": una insignia (cilindro delgado) con la imagen de la
+           insignia en las caras superior e inferior, girando despacio -->
+      <a-entity
+        id="badge3d"
+        position="0 0.75 0"
+        scale="0.55 0.55 0.55"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"
+      >
+        <a-cylinder
+          radius="1"
+          height="0.12"
+          src="#badgeTex"
+          metalness="0.2"
+          roughness="0.6"
+          side="double"
+          segments-radial="48"
+        ></a-cylinder>
       </a-entity>
 
     </a-marker>
 
-    <!-- Activa la cámara del dispositivo y solicita permisos -->
     <a-entity camera></a-entity>
 
   </a-scene>
 
-<script type="text/javascript" src="js/script.js"></script>
+  <script>
+    const marker = document.querySelector('#innfocusMarker');
+    const hint = document.getElementById('hint');
+    marker.addEventListener('markerFound', () => { hint.style.display = 'none'; });
+    marker.addEventListener('markerLost', () => {
+      hint.style.display = 'block';
+      hint.textContent = 'Buscando marcador...';
+    });
+
+    // Dibuja el texto "Mi perfil INNFOCUS es" en Montserrat sobre un canvas
+    // y lo usa como textura del a-plane, para asegurar que se vea con la
+    // tipografia correcta (el componente text por defecto de A-Frame no
+    // incluye Montserrat).
+    function pintarTextoMontserrat() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fondo semitransparente para que el texto se lea sobre cualquier fondo
+      ctx.fillStyle = 'rgba(20, 10, 45, 0.55)';
+      roundRect(ctx, 10, 40, canvas.width - 20, canvas.height - 80, 40);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = "700 96px 'Montserrat'";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Mi perfil INNFOCUS es', canvas.width / 2, canvas.height / 2 + 4);
+
+      const textPlane = document.querySelector('#textPlane');
+      textPlane.setAttribute('material', {
+        src: canvas.toDataURL('image/png'),
+        transparent: true,
+        opacity: 1,
+        shader: 'flat'
+      });
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // Espera a que la fuente Montserrat este realmente cargada antes de dibujar
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load("700 96px 'Montserrat'").then(pintarTextoMontserrat).catch(pintarTextoMontserrat);
+      document.fonts.ready.then(pintarTextoMontserrat);
+    } else {
+      window.addEventListener('load', pintarTextoMontserrat);
+    }
+  </script>
+
 </body>
 </html>

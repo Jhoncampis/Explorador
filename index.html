@@ -88,22 +88,40 @@
         material="transparent: true; opacity: 0; shader: flat"
       ></a-plane>
 
-      <!-- "Modelo 3D": una insignia (cilindro delgado) con la imagen de la
-           insignia en las caras superior e inferior, girando despacio -->
+      <!-- "Modelo 3D": una moneda/medalla que gira sobre su propio eje
+           vertical, mostrando primero una cara, luego el canto (de lado),
+           luego la otra cara -- como una moneda real girando.
+           Se arma con 2 caras circulares (la imagen de la insignia) +
+           un canto cilindrico solido para dar grosor. -->
       <a-entity
         id="badge3d"
         position="0 0.75 0"
         scale="0.55 0.55 0.55"
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear"
       >
-        <a-cylinder
+        <!-- Cara frontal -->
+        <a-circle
           radius="1"
+          segments="64"
+          position="0 0 0.061"
+          material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
+        ></a-circle>
+
+        <!-- Cara trasera (misma imagen, volteada hacia el otro lado) -->
+        <a-circle
+          radius="1"
+          segments="64"
+          position="0 0 -0.061"
+          rotation="0 180 0"
+          material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
+        ></a-circle>
+
+        <!-- Canto de la moneda (grosor) -->
+        <a-cylinder
+          radius="0.995"
           height="0.12"
-          src="#badgeTex"
-          metalness="0.2"
-          roughness="0.6"
-          side="double"
-          segments-radial="48"
+          rotation="90 0 0"
+          material="color: #C9A227; metalness: 0.6; roughness: 0.35; shader: standard"
         ></a-cylinder>
       </a-entity>
 

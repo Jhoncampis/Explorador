@@ -95,9 +95,8 @@
       smoothThreshold="5"
     >
 
-      <!-- Texto encima del modelo (bien arriba en el eje Y para que la
-           moneda, al girar en Z, nunca lo tape), dibujado en un canvas
-           con la fuente Montserrat real y usado como textura. -->
+      <!-- Texto encima de la insignia, dibujado en un canvas con la
+           fuente Montserrat real y usado como textura. -->
       <a-plane
         id="textPlane"
         position="0 2.3 0"
@@ -107,40 +106,19 @@
         material="transparent: true; opacity: 0; shader: flat"
       ></a-plane>
 
-      <!-- "Modelo 3D": una moneda que queda acostada en el MISMO PLANO
-           que el marcador (caras mirando hacia arriba/abajo, igual que
-           el marcador esta acostado en la mesa) y gira sobre el eje Z,
-           como una moneda de verdad dando vueltas: cara -> canto -> cara. -->
+      <!-- Insignia en 2D, quieta (sin girar), apoyada plana sobre el
+           mismo plano del marcador. -->
       <a-entity
         id="badge3d"
         position="0 0.7 0"
         scale="0.55 0.55 0.55"
-        animation="property: rotation; to: 0 0 360; loop: true; dur: 6000; easing: linear"
       >
-        <!-- Cara de arriba -->
         <a-circle
           radius="1"
           segments="64"
-          position="0 0.061 0"
           rotation="-90 0 0"
-          material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
+          material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: double"
         ></a-circle>
-
-        <!-- Cara de abajo (misma imagen, mirando hacia el otro lado) -->
-        <a-circle
-          radius="1"
-          segments="64"
-          position="0 -0.061 0"
-          rotation="90 0 0"
-          material="src: #badgeTex; shader: flat; transparent: true; alphaTest: 0.5; side: front"
-        ></a-circle>
-
-        <!-- Canto de la moneda (grosor); eje Y por defecto, igual que las caras -->
-        <a-cylinder
-          radius="0.995"
-          height="0.12"
-          material="color: #C9A227; metalness: 0.6; roughness: 0.35; shader: standard"
-        ></a-cylinder>
       </a-entity>
 
     </a-marker>

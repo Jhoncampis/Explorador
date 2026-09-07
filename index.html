@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Realidad Aumentada - INNFOCUS</title>
+  <title>Realidad Aumentada - Hiro</title>
   
   <!-- Carga de A-Frame para el motor 3D -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -25,8 +25,8 @@
       <img id="insignia-explorador" src="1788747483790.jpg">
     </a-assets>
 
-    <!-- Marcador personalizado apuntando a pattern-photo.patt -->
-    <a-marker type="pattern" url="pattern-photo.patt">
+    <!-- Marcador estándar Hiro -->
+    <a-marker preset="hiro">
       
       <!-- Contenedor con animación de giro lento (360 grados en 10 segundos) -->
       <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
